@@ -4,7 +4,11 @@ async function getAccessToken(): Promise<string> {
     const keyFile = JSON.parse(process.env.GOOGLE_CREDENTIALS || "{}");
     // Corrige a chave privada para remover \n e deixar como quebra de linha real
     if (keyFile.private_key) {
-        keyFile.private_key = keyFile.private_key.replace(/\\n/g, "\n");
+        // Remove aspas extras e converte \n para quebra de linha real
+        keyFile.private_key = keyFile.private_key
+            .replace(/\\r\\n/g, "\n")
+            .replace(/\\n/g, "\n")
+            .replace(/^"|"$/g, "");
     }
     const now = Math.floor(Date.now() / 1000);
     const payload = {
