@@ -1,11 +1,11 @@
-import fs from "fs";
 import jwt from "jsonwebtoken";
-import path from "path";
-
-const SERVICE_ACCOUNT_PATH = path.resolve(process.cwd(), "secrets/gglobo-hackday11-hdg-dev-d45f49486ac3.json");
 
 async function getAccessToken(): Promise<string> {
     const keyFile = JSON.parse(process.env.GOOGLE_CREDENTIALS || "{}");
+    // Corrige a chave privada para remover \n e deixar como quebra de linha real
+    if (keyFile.private_key) {
+        keyFile.private_key = keyFile.private_key.replace(/\\n/g, "\n");
+    }
     const now = Math.floor(Date.now() / 1000);
     const payload = {
         iss: keyFile.client_email,
