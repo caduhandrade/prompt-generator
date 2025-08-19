@@ -2,14 +2,14 @@ import jwt from "jsonwebtoken";
 
 async function getAccessToken(): Promise<string> {
     const keyFile = JSON.parse(process.env.GOOGLE_CREDENTIALS || "{}");
-    // Corrige a chave privada para remover \n e deixar como quebra de linha real
-    if (keyFile.private_key) {
-        // Remove aspas extras e converte \n para quebra de linha real
-        keyFile.private_key = keyFile.private_key
-            .replace(/\\r\\n/g, "\n")
-            .replace(/\\n/g, "\n")
-            .replace(/^"|"$/g, "");
+
+    if (!keyFile.private_key || !keyFile.client_email || !keyFile.token_uri) {
+        throw new Error("Invalid GOOGLE_CREDENTIALS environment variable");
     }
+
+    // Alternativa segura: apenas converte \n para quebra de linha real
+    const privateKey = keyFile.private_key.replace(/\\n/g, "\n");
+
     const now = Math.floor(Date.now() / 1000);
     const payload = {
         iss: keyFile.client_email,
@@ -18,15 +18,19 @@ async function getAccessToken(): Promise<string> {
         exp: now + 3600,
         iat: now,
     };
-    const jwtToken = jwt.sign(payload, keyFile.private_key, { algorithm: "RS256" });
+
+    // Gera JWT com RS256 usando a chave corretamente formatada
+    const jwtToken = jwt.sign(payload, privateKey, { algorithm: "RS256" });
 
     const res = await fetch(keyFile.token_uri, {
         method: "POST",
         headers: { "Content-Type": "application/x-www-form-urlencoded" },
         body: `grant_type=urn:ietf:params:oauth:grant-type:jwt-bearer&assertion=${jwtToken}`,
     });
+
     const data: any = await res.json();
     if (!data.access_token) throw new Error("Failed to get access token");
+
     return data.access_token;
 }
 
